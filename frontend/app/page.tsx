@@ -21,12 +21,29 @@ export default function Home() {
       chunksRef.current.push(event.data);
     };
 
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-      const url = URL.createObjectURL(audioBlob);
-      setAudioURL(url);
-      setTranscript("Audio recorded successfully. Speech-to-text API will be connected next.");
-    };
+    mediaRecorder.onstop = async () => {
+  const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+  const url = URL.createObjectURL(audioBlob);
+  setAudioURL(url);
+
+  const formData = new FormData();
+  formData.append("file", audioBlob, "recording.webm");
+
+  setTranscript("Uploading audio to backend...");
+
+  try {
+    const response = await fetch("http://127.0.0.1:5000/transcribe", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    setTranscript(data.message + " File: " + data.filename);
+  } catch (error) {
+    setTranscript("Error uploading audio to backend.");
+  }
+};
 
     mediaRecorder.start();
     setIsRecording(true);

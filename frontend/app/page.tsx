@@ -39,7 +39,7 @@ export default function Home() {
 
     const data = await response.json();
 
-    setTranscript(data.message + " File: " + data.filename);
+    setTranscript(data.transcript);
   } catch (error) {
     setTranscript("Error uploading audio to backend.");
   }

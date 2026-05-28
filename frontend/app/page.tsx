@@ -6,6 +6,8 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState("");
   const [transcript, setTranscript] = useState("Your converted text will appear here...");
+  const [loading, setLoading] = useState(false);
+const [history, setHistory] = useState<string[]>([]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -29,6 +31,7 @@ export default function Home() {
   const formData = new FormData();
   formData.append("file", audioBlob, "recording.webm");
 
+setLoading(true);
   setTranscript("Uploading audio to backend...");
 
   try {
@@ -40,8 +43,11 @@ export default function Home() {
     const data = await response.json();
 
     setTranscript(data.transcript);
+    setHistory((prev) => [data.transcript, ...prev]);
+setLoading(false);
   } catch (error) {
     setTranscript("Error uploading audio to backend.");
+    setLoading(false);
   }
 };
 
@@ -99,7 +105,44 @@ export default function Home() {
         <div className="border rounded-xl p-5 min-h-40 bg-gray-50">
           <h2 className="font-semibold mb-3">Transcript</h2>
           <p className="text-gray-500">{transcript}</p>
+          <div className="flex gap-4 mt-4">
+  <button
+    onClick={() => navigator.clipboard.writeText(transcript)}
+    className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+  >
+    Copy Transcript
+  </button>
+
+  <a
+    href={`data:text/plain;charset=utf-8,${encodeURIComponent(transcript)}`}
+    download="transcript.txt"
+    className="bg-green-600 text-white px-4 py-2 rounded-lg"
+  >
+    Download Transcript
+  </a>
+</div>
         </div>
+        {loading && (
+  <p className="text-blue-600 mt-4">
+    Processing audio with Deepgram...
+  </p>
+)}
+<div className="mt-8">
+  <h2 className="text-2xl font-bold mb-4">
+    Transcript History
+  </h2>
+
+  <div className="space-y-3">
+    {history.map((item, index) => (
+      <div
+        key={index}
+        className="bg-white border rounded-xl p-4 shadow-sm"
+      >
+        {item}
+      </div>
+    ))}
+  </div>
+</div>
       </div>
     </main>
   );

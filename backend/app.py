@@ -31,7 +31,6 @@ def transcribe_audio(file_path):
         response = requests.post(url, headers=headers, data=audio)
 
     result = response.json()
-    print(result)
 
     try:
         transcript = result["results"]["channels"][0]["alternatives"][0]["transcript"]

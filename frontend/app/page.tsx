@@ -46,7 +46,7 @@ const startRecording = async () => {
       setTranscript("Uploading audio to backend...");
 
       try {
-        const response = await fetch("https://speech-to-text-backend-luhx.onrender.com/", {
+        const response = await fetch("https://speech-to-text-backend-luhx.onrender.com/transcribe", {
           method: "POST",
           body: formData,
         });
@@ -60,7 +60,8 @@ const startRecording = async () => {
         ]);
         setLoading(false);
       } catch (error) {
-        setTranscript("Error uploading audio to backend.");
+        console.error(error);
+        setTranscript("Error uploading audio to backend. Check backend URL or CORS. ");
         setLoading(false);
       }
     };

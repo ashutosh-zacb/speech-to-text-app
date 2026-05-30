@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
@@ -8,11 +8,22 @@ export default function Home() {
   const [transcript, setTranscript] = useState("Your converted text will appear here...");
   const [loading, setLoading] = useState(false);
 const [history, setHistory] = useState<string[]>([]);
+useEffect(() => {
+  const savedHistory = localStorage.getItem("transcriptHistory");
+  if (savedHistory) {
+    setHistory(JSON.parse(savedHistory));
+  }
+}, []);
+
+useEffect(() => {
+  localStorage.setItem("transcriptHistory", JSON.stringify(history));
+}, [history]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  const startRecording = async () => {
+const startRecording = async () => {
+  try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
     const mediaRecorder = new MediaRecorder(stream);
@@ -24,36 +35,42 @@ const [history, setHistory] = useState<string[]>([]);
     };
 
     mediaRecorder.onstop = async () => {
-  const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-  const url = URL.createObjectURL(audioBlob);
-  setAudioURL(url);
+      const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+      const url = URL.createObjectURL(audioBlob);
+      setAudioURL(url);
 
-  const formData = new FormData();
-  formData.append("file", audioBlob, "recording.webm");
+      const formData = new FormData();
+      formData.append("file", audioBlob, "recording.webm");
 
-setLoading(true);
-  setTranscript("Uploading audio to backend...");
+      setLoading(true);
+      setTranscript("Uploading audio to backend...");
 
-  try {
-    const response = await fetch("http://127.0.0.1:5000/transcribe", {
-      method: "POST",
-      body: formData,
-    });
+      try {
+        const response = await fetch("http://127.0.0.1:5000/transcribe", {
+          method: "POST",
+          body: formData,
+        });
 
-    const data = await response.json();
+        const data = await response.json();
 
-    setTranscript(data.transcript);
-    setHistory((prev) => [data.transcript, ...prev]);
-setLoading(false);
-  } catch (error) {
-    setTranscript("Error uploading audio to backend.");
-    setLoading(false);
-  }
-};
+        setTranscript(data.transcript);
+        setHistory((prev) => [
+          `${new Date().toLocaleString()} - ${data.transcript}`,
+          ...prev,
+        ]);
+        setLoading(false);
+      } catch (error) {
+        setTranscript("Error uploading audio to backend.");
+        setLoading(false);
+      }
+    };
 
     mediaRecorder.start();
     setIsRecording(true);
-  };
+  } catch (error) {
+    alert("Microphone access denied. Please allow microphone permission.");
+  }
+};
 
   const stopRecording = () => {
     mediaRecorderRef.current?.stop();
@@ -63,11 +80,11 @@ setLoading(false);
   return (
     <main className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
       <div className="bg-white w-full max-w-2xl rounded-2xl shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center mb-2">
-          Speech-to-Text Application
-        </h1>
+        <h1 className="text-4xl font-extrabold text-center mb-2 text-blue-700">
+  🎤 Speech-to-Text Application
+</h1>
 
-        <p className="text-center text-gray-600 mb-8">
+        <p className="text-center text-gray-600 mb-8 text-lg">
           Record your voice and convert it into text.
         </p>
 
@@ -131,12 +148,18 @@ setLoading(false);
   <h2 className="text-2xl font-bold mb-4">
     Transcript History
   </h2>
+  <button
+  onClick={() => setHistory([])}
+  className="bg-red-500 text-white px-4 py-2 rounded-lg mb-4"
+>
+  Clear History
+</button>
 
   <div className="space-y-3">
     {history.map((item, index) => (
       <div
         key={index}
-        className="bg-white border rounded-xl p-4 shadow-sm"
+        className="bg-gray-50 border rounded-xl p-4 shadow-md hover:shadow-lg transition"
       >
         {item}
       </div>

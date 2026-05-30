@@ -46,7 +46,7 @@ const startRecording = async () => {
       setTranscript("Uploading audio to backend...");
 
       try {
-        const response = await fetch("http://127.0.0.1:5000/transcribe", {
+        const response = await fetch("https://speech-to-text-backend-luhx.onrender.com/", {
           method: "POST",
           body: formData,
         });
